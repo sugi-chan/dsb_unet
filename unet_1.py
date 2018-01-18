@@ -30,8 +30,10 @@ import tensorflow as tf
 IMG_WIDTH = 256
 IMG_HEIGHT = 256
 IMG_CHANNELS = 3
-TRAIN_PATH = '../2018_dsb/input/stage1_train/'
-TEST_PATH = '../2018_dsb/input/stage1_test/'
+
+TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
+TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
+
 sub_name ='sub-dsbowl2018-2.csv'
 save_name_file = 'model-dsbowl2018-2.h5'
 batch_size_n = 8
