@@ -26,4 +26,4 @@ Issue with continuing to scale up the augmentation is that it is likely to cause
 ## Done List
 
 -Deploy deeper Unet I think I can get at least up to 512 conv layers using my 1080X Nvidia card (DONE)
-  1080 is able to handle deeper Unet, but it requires that we use single image batches 
+  1080 is able to handle deeper Unet, but it requires that we use single image batches. Was able to build the Unet down to 1024 level. 
