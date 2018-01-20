@@ -1,5 +1,5 @@
-# .315 on leaderboard using larger augmented dataset
-# fairly simplified unet architecture, will work on expanding it
+# need to break this down and make some model generators
+# is currently breaking at the setting seed point for the train X and Y generators
 
 import os
 import sys
@@ -17,6 +17,7 @@ from skimage.io import imread, imshow, imread_collection, concatenate_images
 from skimage.transform import resize
 from skimage.morphology import label
 
+from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import Adam
 from keras.models import Model, load_model
 from keras.layers import Input
@@ -34,16 +35,16 @@ IMG_WIDTH = 256
 IMG_HEIGHT = 256
 IMG_CHANNELS = 3
 
-#TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
+TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
-TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
+#TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-sub_name ='sub-dsbowl2018-3.csv'
-save_name_file = 'model-dsbowl2018-3_14kAugmentation.h5'
+sub_name ='sub-dsbowl2018-4_generators.csv'
+save_name_file = 'model-dsbowl2018-4_generators.h5'
 patience = 3
 batch_size_n = 8
 epoch_n = 100
-val_hold_out = 0.03 #with larger set might as well keep more samples....?
+val_hold_out = 0.9
 learning_rate =0.0001
 
 warnings.filterwarnings('ignore', category=UserWarning, module='skimage')
@@ -54,6 +55,11 @@ np.random.seed = seed
 # Get train and test IDs
 train_ids = next(os.walk(TRAIN_PATH))[1]
 test_ids = next(os.walk(TEST_PATH))[1]
+
+val = train_ids[int(val_hold_out*len(train_ids)):]
+train_ids = train_ids[:int(val_hold_out*len(train_ids))]
+
+num_samples_train = len(train_ids)
 
 # Get and resize train images and masks
 X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
@@ -73,6 +79,28 @@ for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):
         mask = np.maximum(mask, mask_)
     Y_train[n] = mask
 
+
+
+#validation prep
+# Get and resize train images and masks
+X_val = np.zeros((len(val), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
+Y_val = np.zeros((len(val), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+print('Getting and resizing val images and masks ... ')
+sys.stdout.flush()
+for n, id_ in tqdm(enumerate(val), total=len(val)):
+    path = TRAIN_PATH + id_
+    img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]
+    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+    X_val[n] = img
+    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+    for mask_file in next(os.walk(path + '/masks/'))[2]:
+        mask_ = imread(path + '/masks/' + mask_file)
+        mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', 
+                                      preserve_range=True), axis=-1)
+        mask = np.maximum(mask, mask_)
+    Y_val[n] = mask
+
+
 # Get and resize test images
 X_test = np.zeros((len(test_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
 sizes_test = []
@@ -88,13 +116,14 @@ for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
 
 print('Done!')
 
+'''
 # Check if training data looks all right
 ix = random.randint(0, len(train_ids))
 imshow(X_train[ix])
 plt.show()
 imshow(np.squeeze(Y_train[ix]))
 plt.show()
-
+'''
 '''
 Need to fix this part
 '''
@@ -172,11 +201,45 @@ adam = Adam(lr=learning_rate, decay=1e-6)
 model.compile(optimizer=adam, loss='binary_crossentropy', metrics=[mean_iou])
 model.summary()
 
+#make data generators
+datagen_args = dict(featurewise_center = True,
+    featurewise_std_normalization = True,
+    rotation_range =180.,
+    width_shift_range=.2,
+    height_shift_range =.2,
+    zoom_range=.2,
+    shear_range = .3,
+    horizontal_flip=True,
+    vertical_flip=True,
+    fill_mode = 'reflect')
+
+image_data_gen = ImageDataGenerator(**datagen_args)
+mask_data_gen = ImageDataGenerator(**datagen_args)
+
+# set seed to make sure they match
+seed = 42
+random.seed = seed
+np.random.seed = seed
+
+image_data_gen.fit(X_train,augment=True,seed=seed)
+mask_data_gen.fit(Y_train,augment=True,seed=seed)
+
+train_gen = zip(image_data_gen,mask_data_gen)
+
+#make validation generator
+val_gen = ImageDataGenerator(featurwise_center = True,
+    featurewise_std_normalization = True)
+
 # Fit model
 earlystopper = EarlyStopping(patience=patience, verbose=1)
 checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
-results = model.fit(X_train, Y_train, validation_split=val_hold_out, batch_size=batch_size_n, epochs=epoch_n,
-                    callbacks=[earlystopper, checkpointer])
+
+results = model.fit_generator(train_gen, 
+    steps_per_epoch = num_samples_train/batch_size_n,
+    validation_data=val_gen.flow(X_val,Y_val),
+    validation_steps=len(val)/batch_size_n,
+    epochs=epoch_n,
+    callbacks=[earlystopper, checkpointer])
 
 
 #make predictions

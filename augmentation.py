@@ -30,7 +30,7 @@ np.random.seed = seed
 
 TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
-aug_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
+aug_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train2/'
 
 # Get train and test IDs
 train_ids = next(os.walk(TRAIN_PATH))[1]
@@ -157,7 +157,7 @@ def clean_data_augmentation(image_ids):
 
 
 #image_ids = check_output(["ls", "../input/stage1_train/"]).decode("utf8").split()
-split_num = 20
+split_num = 40
 
 
 make_data_augmentation(train_ids,split_num)
