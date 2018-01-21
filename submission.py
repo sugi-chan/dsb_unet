@@ -35,8 +35,8 @@ IMG_CHANNELS = 3
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
 TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-4_512_unet.csv'
-save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-dsbowl2018-4_512_unet.h5'
+sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-5_512_unet_50thresh.csv'
+save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-dsbowl2018-5_512_unet.h5'
 patience = 3
 batch_size_n = 2
 epoch_n = 100
@@ -94,7 +94,7 @@ preds_test = model.predict(X_test, verbose=1)
 # Threshold predictions
 #preds_train_t = (preds_train > 0.5).astype(np.uint8)
 #preds_val_t = (preds_val > 0.5).astype(np.uint8)
-preds_test_t = (preds_test > 0.5).astype(np.uint8)
+preds_test_t = (preds_test > 0.6).astype(np.uint8)
 
 # Create list of upsampled test masks
 preds_test_upsampled = []
@@ -116,7 +116,7 @@ def rle_encoding(x):
         prev = b
     return run_lengths
 
-def prob_to_rles(x, cutoff=0.5):
+def prob_to_rles(x, cutoff=0.48):
     lab_img = label(x > cutoff)
     for i in range(1, lab_img.max() + 1):
         yield rle_encoding(lab_img == i)

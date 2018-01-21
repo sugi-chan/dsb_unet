@@ -39,14 +39,20 @@ IMG_CHANNELS = 3
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
 TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train2/'
 
-sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-5_512_unet.csv'
-save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-dsbowl2018-5_512_unet.h5'
-patience = 2
+model_names = 'dsbowl2018-6_512_unet.h5'
+
+sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-'+model_names
+final_sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/final_sub-'+model_names
+
+save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-'+model_names
+final_model = 'C:/Users/micha/Desktop/2018_dsb/models/final_model-'+model_names
+
+patience = 4
 batch_size_n = 1
-epoch_n = 100
+epoch_n = 15
 val_hold_out = 0.01 #with larger set might as well keep more samples....?
 learning_rate =0.0001
-
+decay_ = 3e-6
 
 
 warnings.filterwarnings('ignore', category=UserWarning, module='skimage')
@@ -170,28 +176,30 @@ c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', paddin
 outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
 
 model = Model(inputs=[inputs], outputs=[outputs])
-adam = Adam(lr=learning_rate, decay=1e-6)
+adam = Adam(lr=learning_rate, decay=decay_)
 
 model.compile(optimizer=adam, loss='binary_crossentropy', metrics=[mean_iou])
 model.summary()
 
 # Fit model
-earlystopper = EarlyStopping(patience=patience, verbose=1)
+#earlystopper = EarlyStopping(patience=patience, verbose=1)
 checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
 results = model.fit(X_train, Y_train, validation_split=val_hold_out, batch_size=batch_size_n, epochs=epoch_n,
-                    callbacks=[earlystopper, checkpointer])
+                    callbacks=[checkpointer])#callbacks=[earlystopper, checkpointer])
 
+## save final model
+model.save(final_model)
 
 #make predictions
 # Predict on train, val and test
 model = load_model(save_name_file, custom_objects={'mean_iou': mean_iou})
-preds_train = model.predict(X_train[:int(X_train.shape[0]*0.90)], verbose=1)
-preds_val = model.predict(X_train[int(X_train.shape[0]*0.90):], verbose=1)
+#preds_train = model.predict(X_train[:int(X_train.shape[0]*0.90)], verbose=1)
+#preds_val = model.predict(X_train[int(X_train.shape[0]*0.90):], verbose=1)
 preds_test = model.predict(X_test, verbose=1)
 
 # Threshold predictions
-preds_train_t = (preds_train > 0.5).astype(np.uint8)
-preds_val_t = (preds_val > 0.5).astype(np.uint8)
+#preds_train_t = (preds_train > 0.5).astype(np.uint8)
+#preds_val_t = (preds_val > 0.5).astype(np.uint8)
 preds_test_t = (preds_test > 0.5).astype(np.uint8)
 
 # Create list of upsampled test masks
@@ -202,7 +210,7 @@ for i in range(len(preds_test)):
                                        mode='constant', preserve_range=True))
 
 
-
+'''
 ## Perform a sanity check on some random training samples
 ix = random.randint(0, len(preds_train_t))
 imshow(X_train[ix])
@@ -223,7 +231,7 @@ imshow(np.squeeze(Y_train[int(Y_train.shape[0]*0.9):][ix]))
 plt.show()
 imshow(np.squeeze(preds_val_t[ix]))
 plt.show()
-
+'''
 # Run-length encoding stolen from https://www.kaggle.com/rakhlin/fast-run-length-encoding-python
 def rle_encoding(x):
     dots = np.where(x.T.flatten() == 1)[0]
@@ -252,3 +260,34 @@ sub = pd.DataFrame()
 sub['ImageId'] = new_test_ids
 sub['EncodedPixels'] = pd.Series(rles).apply(lambda x: ' '.join(str(y) for y in x))
 sub.to_csv(sub_name, index=False)
+
+
+#### Final model
+model = load_model(final_model, custom_objects={'mean_iou': mean_iou})
+
+preds_test = model.predict(X_test, verbose=1)
+
+# Threshold predictions
+#preds_train_t = (preds_train > 0.5).astype(np.uint8)
+#preds_val_t = (preds_val > 0.5).astype(np.uint8)
+preds_test_t = (preds_test > 0.5).astype(np.uint8)
+
+# Create list of upsampled test masks
+preds_test_upsampled = []
+for i in range(len(preds_test)):
+    preds_test_upsampled.append(resize(np.squeeze(preds_test[i]),
+                                       (sizes_test[i][0], sizes_test[i][1]), 
+                                       mode='constant', preserve_range=True))
+
+new_test_ids = []
+rles = []
+for n, id_ in enumerate(test_ids):
+    rle = list(prob_to_rles(preds_test_upsampled[n]))
+    rles.extend(rle)
+    new_test_ids.extend([id_] * len(rle))
+
+# Create submission DataFrame
+sub = pd.DataFrame()
+sub['ImageId'] = new_test_ids
+sub['EncodedPixels'] = pd.Series(rles).apply(lambda x: ' '.join(str(y) for y in x))
+sub.to_csv(final_sub_name, index=False)
