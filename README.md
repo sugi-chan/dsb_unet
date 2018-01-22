@@ -19,6 +19,8 @@ Issue with continuing to scale up the augmentation is that it is likely to cause
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
 
+-test gaussian noise layer? might help with data augmentation
+
 -Start building ensemble... look to some other challenges on ensemble methods in segmentation challenges... since one model is not going to be enough to win long term... can also look to other challenges on how to implement ensemble methods for segmentation tasks.
 
 -add images to readme
