@@ -17,7 +17,7 @@ Deeper Unet with 14K data augmentation gets to .334 or something which is good e
 
 Issue with continuing to scale up the augmentation is that it is likely to cause the repetition of data which may lead to overfitting in the long run. Currently testing a dataset with around 26K samples, log loss is performing well. Time shall tell. (this did ok, but similar results to the 14K set I made, probably because it begins to repeat.
 
-Run log 11: deeper UNET performing well with heavy dropout added as well as some additional convolutional layers. will likely restart it and run it for another 15-20 epochs to see how it improves.
+Run log 11: deeper UNET performing well with heavy dropout added as well as some additional convolutional layers. will likely restart it and run it for another 15-20 epochs to see how it improves. ended with loss of around .041 and mean iou .87~ was a score of .325, I think the model can improve if run for additional epochs so will run for 30 additional epochs, saving final and best models.
 
 ## Further Testing/TODO List
 
