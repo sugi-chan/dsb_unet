@@ -23,7 +23,7 @@ Issue with continuing to scale up the augmentation is that it is likely to cause
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
   - Currently not performing well, but the networks are effectively trained much less than the other Unets I have been training
-  - Should augment slightly since the number of samples is so low and I dont want to make the validations sets larger than they have to be.
+  - Steps: Augment data to a few thousand, normalize, run through generator scripts
 
 -test gaussian noise layer? might help with data augmentation
 
