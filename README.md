@@ -6,18 +6,24 @@ In my spare time I am going to be working on building out a response for the 201
 
 ## Initial Results
 
+After implementing an initial Unet model and building out the pipeline I have been experimenting with changes to the architecture, mainly adding additional layers to see how much I can cram through an Nvidia 1080XTi card. After climbing into the top 50 it has been very minimal improvement. 
+
+Areas to improve will be the data augmentation methods, maybe normalization methods to make the inputs more similar (https://www.kaggle.com/kmader/normalizing-brightfield-stained-and-fluorescence) could be a good route for this, and architecture changes. Leaders are likely making use of higher computing then what I have available, so my efforts will likely have to be around data augmentation.  
+
+## Notes
 The mini Unet is enough to get a leaderboard score of .269 with relatively little data and no augmentation. Next iterations are going to use heavily augmented data, this may lead to overfitting, but it is worth testing.
 
 Deeper Unet with 14K data augmentation gets to .334 or something which is good enough for a early top 20 spot which is cool. Next steps are going to build out wauys to augment the dataset...
 
-Issue with continuing to scale up the augmentation is that it is likely to cause the repetition of data which may lead to overfitting in the long run. Currently testing a dataset with around 26K samples, log loss is performing well. Time shall tell. 
-
+Issue with continuing to scale up the augmentation is that it is likely to cause the repetition of data which may lead to overfitting in the long run. Currently testing a dataset with around 26K samples, log loss is performing well. Time shall tell. (this did ok, but similar results to the 14K set I made, probably because it begins to repeat.
 
 
 ## Further Testing/TODO List
 
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
+  - Currently not performing well, but the networks are effectively trained much less than the other Unets I have been training
+  - Should augment slightly since the number of samples is so low and I dont want to make the validations sets larger than they have to be.
 
 -test gaussian noise layer? might help with data augmentation
 
