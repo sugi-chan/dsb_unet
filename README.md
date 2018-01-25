@@ -21,6 +21,8 @@ Run log 11: deeper UNET performing well with heavy dropout added as well as some
 
 There are oddly shaped files in the test set? so although training has been done on the 256x256 set we may need to evaluate images of any set of dimensions? (odd as in 151x500)
 
+11/25: Running generator unet on normalized data, also added functionality to save after every run. Need to test how runs with high mean IOU scores perform.
+
 ## Further Testing/TODO List
 
 -Test code to use generators for data augmentation (built, need to debug)
