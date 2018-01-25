@@ -28,13 +28,13 @@ seed = 42
 random.seed = seed
 np.random.seed = seed
 
-TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
-TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
-aug_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train2/'
+TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
+#TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
+aug_path = 'E:/2018_dsb/input/stage1_aug_train3/'
 
 # Get train and test IDs
 train_ids = next(os.walk(TRAIN_PATH))[1]
-test_ids = next(os.walk(TEST_PATH))[1]
+#test_ids = next(os.walk(TEST_PATH))[1]
 
 
 # Input data files are available in the "../input/" directory.
@@ -157,7 +157,7 @@ def clean_data_augmentation(image_ids):
 
 
 #image_ids = check_output(["ls", "../input/stage1_train/"]).decode("utf8").split()
-split_num = 40
+split_num = 4
 
 
 make_data_augmentation(train_ids,split_num)

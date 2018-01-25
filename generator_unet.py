@@ -8,12 +8,11 @@ from keras.layers.merge import concatenate
 from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from keras.callbacks import ModelCheckpoint
 
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
-import numpy as np
 from keras import backend as K
 from keras.losses import binary_crossentropy
 from skimage.morphology import label
@@ -191,23 +190,24 @@ def prob_to_rles(x, cutoff=0.5):
 if __name__ == "__main__":
 
     img_size = 256
-    batch_size_n = 1
-    epoch_n = 80
-    val_hold_out = 0.02 #with larger set might as well keep more samples....?
-    learning_rate =0.0001
-    decay_ = 3e-6
+    batch_size_n = 4
+    epoch_n = 150
+    val_hold_out = 0.05 #with larger set might as well keep more samples....?
+    learning_rate =0.001
+    decay_ = 2e-6
 
-    TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
-    TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
-    
-    model_names = '1_23_dsbowl2018-10_512_unet.h5'
-    save_names = '1_23_dsbowl2018-10_512_unet.csv'
+    #TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
+    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train3/'
+    TEST_PATH = 'E:/2018_dsb/input/stage1_test/'
 
-    sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/best_sub-'+save_names
-    final_sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/final_sub-'+save_names
+    model_names = 'generator_unet_1070_1_unet.h5'
+    save_names = 'generator_unet_1070_1_unet.csv'
 
-    save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/best_model-'+model_names
-    final_model = 'C:/Users/micha/Desktop/2018_dsb/models/final_model-'+model_names
+    sub_name ='E:/2018_dsb/submission_files/best_sub-'+save_names
+    final_sub_name ='E:/2018_dsb/submission_files/final_sub-'+save_names
+
+    save_name_file = 'E:/2018_dsb/models/best_model-'+model_names
+    final_model = 'E:/2018_dsb/models/final_model-'+model_names
 
     print('building train and val sets')
     X_train, Y_train, X_test, sizes_test = make_df(TRAIN_PATH, TEST_PATH, img_size)
@@ -217,12 +217,14 @@ if __name__ == "__main__":
     print('putting the model together')
 
     model = Unet(img_size)
-    adam = Adam(lr=learning_rate, decay=decay_)
+    #opt = Adam(lr=learning_rate, decay=decay_)
+
+    opt = SGD(lr=learning_rate,momentum =.9,decay=decay_)
 
     #load old models if restarting runs
     #model = load_model(save_name_file,custom_objects={'mean_iou': mean_iou})
     #model.compile(optimizer=adam, loss=bce_dice_loss, metrics=[mean_iou])
-    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=[mean_iou]) 
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
 
     checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
 
@@ -236,6 +238,7 @@ if __name__ == "__main__":
 
 
     model.save(final_model)
+
     model = load_model(save_name_file)
 
     preds_test = model.predict(X_test, verbose=1)
