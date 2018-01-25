@@ -190,17 +190,17 @@ def prob_to_rles(x, cutoff=0.5):
 if __name__ == "__main__":
 
     img_size = 256
-    batch_size_n = 4
+    batch_size_n = 8
     epoch_n = 150
     val_hold_out = 0.05 #with larger set might as well keep more samples....?
-    learning_rate =0.001
-    decay_ = 2e-6
-
+    learning_rate =0.0001
+    decay_ = 3e-6
+    momentum = .9
     #TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
     TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train3/'
     TEST_PATH = 'E:/2018_dsb/input/stage1_test/'
 
-    model_names = 'generator_unet_1070_1_unet.h5'
+    model_names = 'generator_unet_1070_1_1_unet.h5'
     save_names = 'generator_unet_1070_1_unet.csv'
 
     sub_name ='E:/2018_dsb/submission_files/best_sub-'+save_names
@@ -217,21 +217,21 @@ if __name__ == "__main__":
     print('putting the model together')
 
     model = Unet(img_size)
-    #opt = Adam(lr=learning_rate, decay=decay_)
+    opt = Adam(lr=learning_rate, decay=decay_)
 
-    opt = SGD(lr=learning_rate,momentum =.9,decay=decay_)
+    #opt = SGD(lr=learning_rate,momentum =momentum,decay=decay_)
 
     #load old models if restarting runs
-    #model = load_model(save_name_file,custom_objects={'mean_iou': mean_iou})
+    model = load_model('E:/2018_dsb/models/best_model-generator_unet_1070_1_1_unet.h5',custom_objects={'mean_iou': mean_iou})
     #model.compile(optimizer=adam, loss=bce_dice_loss, metrics=[mean_iou])
     model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
 
     checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
-
+    every_epoch = ModelCheckpoint(final_model)
     print("show me what you're made of")
 
     model.fit_generator(train_generator, steps_per_epoch=len(xtr)/batch_size_n, epochs=epoch_n,
-                        validation_data=val_generator, validation_steps=len(xval)/batch_size_n,callbacks=[checkpointer])
+                        validation_data=val_generator, validation_steps=len(xval)/batch_size_n,callbacks=[checkpointer,every_epoch])
 
 
     #################################### Evaluation section ####################################
