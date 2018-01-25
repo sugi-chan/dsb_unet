@@ -19,6 +19,8 @@ Issue with continuing to scale up the augmentation is that it is likely to cause
 
 Run log 11: deeper UNET performing well with heavy dropout added as well as some additional convolutional layers. will likely restart it and run it for another 15-20 epochs to see how it improves. ended with loss of around .041 and mean iou .87~ was a score of .325, I think the model can improve if run for additional epochs so will run for 30 additional epochs, saving final and best models.
 
+There are oddly shaped files in the test set? so although training has been done on the 256x256 set we may need to evaluate images of any set of dimensions? (odd as in 151x500)
+
 ## Further Testing/TODO List
 
 -Test code to use generators for data augmentation (built, need to debug)
