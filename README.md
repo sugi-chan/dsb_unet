@@ -37,4 +37,6 @@ There are oddly shaped files in the test set? so although training has been done
 ## Done List
 
 -Deploy deeper Unet I think I can get at least up to 512 conv layers using my 1080X Nvidia card (DONE)
-  1080 is able to handle deeper Unet, but it requires that we use single image batches. Was able to build the Unet down to 1024 level. 
+  1080 is able to handle deeper Unet, but it requires that we use single image batches. Was able to build the Unet down to 1024 level.
+  
+-Built Normalization script. makes images a uniform fluorescent color rather some being black and white and some purple. will apply to runs after finishing the current run 11 tests. (1/25)
