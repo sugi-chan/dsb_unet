@@ -28,6 +28,7 @@ There are oddly shaped files in the test set? so although training has been done
   
   
 ## Further Testing/TODO List
+- Since fully convolutional layers have fewer nodes than dense layers, dropout isnt the MOST helpful, will try run with L2 regularization across all layers and see how performance goes. 
 
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
