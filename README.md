@@ -28,7 +28,7 @@ There are oddly shaped files in the test set? so although training has been done
   
   
 ## Further Testing/TODO List
-- Since fully convolutional layers have fewer nodes than dense layers, dropout isnt the MOST helpful, will try run with L2 regularization across all layers and see how performance goes. 
+- Test code for LinkNet (https://github.com/nickhitsai/LinkNet-Keras/blob/master/linknet.py)
 
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
@@ -42,6 +42,7 @@ There are oddly shaped files in the test set? so although training has been done
 -add images to readme
 
 ## Done List
+- Since fully convolutional layers have fewer nodes than dense layers, dropout isnt the MOST helpful, will try run with L2 regularization across all layers and see how performance goes. (looks to be effective)
 
 -Deploy deeper Unet I think I can get at least up to 512 conv layers using my 1080X Nvidia card (DONE)
   1080 is able to handle deeper Unet, but it requires that we use single image batches. Was able to build the Unet down to 1024 level.
