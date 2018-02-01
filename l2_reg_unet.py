@@ -19,7 +19,7 @@ from skimage.io import imread, imshow, imread_collection, concatenate_images
 from skimage.transform import resize
 from skimage.morphology import label
 
-from keras.optimizers import Adam, SGD
+from keras.optimizers import Adam, SGD, RMSprop
 from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
@@ -28,7 +28,7 @@ from keras.layers.pooling import MaxPooling2D
 from keras.layers.merge import concatenate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras import backend as K
-
+from keras import regularizers
 import tensorflow as tf
 
 # Set some parameters
@@ -37,11 +37,11 @@ IMG_HEIGHT = 256
 IMG_CHANNELS = 3
 
 #TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
-TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test_normalized/'
-TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train_normalized/'
+TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
+TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-model_names = '1_24_dsbowl2018-13_512_unet.h5'
-save_names = '1_24_dsbowl2018-13_512_unet.csv'
+model_names = '1_24_dsbowl2018-15_512_unet_smaller_w_l2.h5'
+save_names = '1_24_dsbowl2018-15_512_unet.csv'
 
 sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-'+save_names
 final_sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/final_sub-'+save_names
@@ -53,7 +53,8 @@ patience = 4
 batch_size_n = 5
 epoch_n = 25
 val_hold_out = 0.01 #with larger set might as well keep more samples....?
-learning_rate =0.00001
+learning_rate =1e-4
+l2_reg = .0001
 decay_ = learning_rate/epoch_n
 
 
@@ -124,74 +125,75 @@ def mean_iou(y_true, y_pred):
 
 
 # Build U-Net model    
-
+#added regularization since conv layers have small numbers of nodes the effect is smaller
 inputs = Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
 s = Lambda(lambda x: x / 255) (inputs)
-c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (s)
-c1 = Dropout(0.3) (c1)
-c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c1)
+
+c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (s)
+#c1 = Dropout(0.5) (c1)
+c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c1)
 p1 = MaxPooling2D((2, 2)) (c1)
 
-c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p1)
-c2 = Dropout(0.3) (c2)
-c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c2)
+c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (p1)
+#c2 = Dropout(0.5) (c2)
+c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c2)
 p2 = MaxPooling2D((2, 2)) (c2)
 
-c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p2)
-#c3 = Dropout(0.3) (c3)
-#c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
-c3 = Dropout(0.3) (c3)
-c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
+c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (p2)
+#c3 = Dropout(0.5) (c3)
+c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c3)
+#c3 = Dropout(0.5) (c3)
+c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c3)
 p3 = MaxPooling2D((2, 2)) (c3)
 
-c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p3)
-c4 = Dropout(0.3) (c4)
-#c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
-#c4 = Dropout(0.3) (c4)
-c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
+c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (p3)
+#c4 = Dropout(0.5) (c4)
+c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c4)
+#c4 = Dropout(0.5) (c4)
+c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c4)
 p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
 
-c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p4)
-c5 = Dropout(0.3) (c5)
-#c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
-#c5 = Dropout(0.3) (c5)
-c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
+c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (p4)
+#c5 = Dropout(0.5) (c5)
+c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c5)
+#c5 = Dropout(0.5) (c5)
+c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c5)
 u6 = Conv2DTranspose(512, (2, 2), strides=(2, 2), padding='same') (c5)
 
 u6 = concatenate([u6, c4])
-c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u6)
-#c6 = Dropout(0.3) (c6)
-#c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
-c6 = Dropout(0.3) (c6)
-c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
+c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (u6)
+#c6 = Dropout(0.5) (c6)
+c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c6)
+#c6 = Dropout(0.5) (c6)
+c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c6)
 
 u7 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same') (c6)
 u7 = concatenate([u7, c3])
-c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u7)
-#c7 = Dropout(0.3) (c7)
-#c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
-c7 = Dropout(0.3) (c7)
-c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
+c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (u7)
+#c7 = Dropout(0.5) (c7)
+c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c7)
+#c7 = Dropout(0.5) (c7)
+c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c7)
 
 u8 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same') (c7)
 u8 = concatenate([u8, c2])
-c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u8)
-c8 = Dropout(0.3) (c8)
-c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c8)
+c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (u8)
+#c8 = Dropout(0.5) (c8)
+c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c8)
 
 u9 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same') (c8)
 u9 = concatenate([u9, c1], axis=3)
-c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u9)
-c9 = Dropout(0.3) (c9)
-c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c9)
+c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (u9)
+#c9 = Dropout(0.5) (c9)
+c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same',kernel_regularizer = regularizers.l2(l2_reg)) (c9)
 
 outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
 
 model = Model(inputs=[inputs], outputs=[outputs])
 
-opt = Adam(lr=learning_rate)
+opt = RMSprop(lr=learning_rate)
 #opt = SGD(lr=learning_rate,momentum=0.9,decay=decay_)
-model = load_model(final_model,custom_objects={'mean_iou': mean_iou})
+#model = load_model(final_model,custom_objects={'mean_iou': mean_iou})
 
 model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou])
 model.summary()

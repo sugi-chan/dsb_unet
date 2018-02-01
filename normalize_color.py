@@ -1,4 +1,8 @@
+'''
+Use this code to normalize the image files in one directory, 
 
+call it once on the image and the second time on the test set
+'''
 
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
@@ -13,14 +17,14 @@ from matplotlib.image import imsave
 
 grid_size = 8
 
-save_path = 'C:/Users/Michael/Desktop/dsb/normalized/'
+save_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train_normalized/'
 
-TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
-TEST_PATH = 'C:/Users/Michael/Desktop/dsb/test_images/'
+TRAIN_PATH = 'E:/2018_dsb/input/2k_aug/'
+TEST_PATH = 'E:/2018_dsb/input/stage1_test_normalized/'
 
+main_path = save_path
+aug_path = main_path
 
-main_path = TEST_PATH
-aug_path = save_path
 
 # Get train and test IDs
 main_ids = next(os.walk(main_path))[1]
@@ -44,5 +48,6 @@ for ax_index, image_id in enumerate(main_ids,1):
 	image_file = rgb_clahe_justl(image_file)
 	normalizer = lambda x: 255-x if x.mean()>127 else x
 	image_file = normalizer(image_file)
-	imsave(aug_path+"{}.png".format(image_id,image_id), image_file)
+	imsave(aug_path+"{}/images/{}.png".format(image_id,image_id), image_file)
+
 

@@ -35,8 +35,8 @@ IMG_CHANNELS = 3
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
 TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-10_512_unet.csv'
-save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/best_model-1_23_dsbowl2018-10_512_unet.h5'
+sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-15_512_unet.csv'
+save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-1_24_dsbowl2018-11_512_unet.h5'
 patience = 3
 batch_size_n = 2
 epoch_n = 100
