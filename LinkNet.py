@@ -1,6 +1,11 @@
-import cv2
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import numpy as np
+
+from keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Activation, UpSampling2D, BatchNormalization, add
+from keras.layers.core import Flatten, Reshape
 
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D
@@ -8,9 +13,9 @@ from keras.layers.merge import concatenate
 from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
-from keras.optimizers import Adam, SGD
+from keras.optimizers import Adam, SGD, RMSprop
 from keras.callbacks import ModelCheckpoint
-
+from keras.regularizers import l2
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 from keras import backend as K
@@ -53,83 +58,123 @@ def make_df(train_path, test_path, img_size):
 
     return X_train, Y_train, X_test, sizes_test
 
-def Unet(img_size):
-    inputs = Input((img_size, img_size, 3))
-    s = Lambda(lambda x: x / 255) (inputs)
 
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (inputs)
-    #c1 = Dropout(0.2) (c1)
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c1)
-    #c1 = Dropout(0.2) (c1)
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c1)
+def _shortcut(input, residual):
+    """Adds a shortcut between input and residual block and merges them with "sum"
+    """
+    # Expand channels of shortcut to match residual.
+    # Stride appropriately to match residual (width, height)
+    # Should be int if network architecture is correctly configured.
+    input_shape = K.int_shape(input)
+    residual_shape = K.int_shape(residual)
+    stride_width = int(round(input_shape[1] / residual_shape[1]))
+    stride_height = int(round(input_shape[2] / residual_shape[2]))
+    equal_channels = input_shape[3] == residual_shape[3]
 
-    p1 = MaxPooling2D((2, 2)) (c1)
+    shortcut = input
+    # 1 X 1 conv if shape is different. Else identity.
+    if stride_width > 1 or stride_height > 1 or not equal_channels:
+        shortcut = Conv2D(filters=residual_shape[3],
+                          kernel_size=(1, 1),
+                          strides=(stride_width, stride_height),
+                          padding="valid",
+                          kernel_initializer="he_normal",
+                          kernel_regularizer=l2(0.00001))(input)
 
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p1)
-    #c2 = Dropout(0.2) (c2)
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c2)
-    #c2 = Dropout(0.2) (c2)
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c2)
- 
-    p2 = MaxPooling2D((2, 2)) (c2)
+    return add([shortcut, residual])
 
-    c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p2)
-    #c3 = Dropout(0.2) (c3)
-    c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
-    #c3 = Dropout(0.2) (c3)
-    c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
-    p3 = MaxPooling2D((2, 2)) (c3)
+def encoder_block(input_tensor, m, n):
+    x = BatchNormalization()(input_tensor)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=n, kernel_size=(3, 3), strides=(2, 2), padding="same")(x)
 
-    c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p3)
-    #c4 = Dropout(0.2) (c4)
-    c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
-    #c4 = Dropout(0.2) (c4)
-    c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
-    p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=n, kernel_size=(3, 3), padding="same")(x)
 
-    c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p4)
-    #c5 = Dropout(0.3) (c5)
-    c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
-    #c5 = Dropout(0.2) (c5)
-    c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
+    added_1 = _shortcut(input_tensor, x)
 
-    u6 = Conv2DTranspose(512, (2, 2), strides=(2, 2), padding='same') (c5)
-    u6 = concatenate([u6, c4])
-    c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u6)
-    #c6 = Dropout(0.2) (c6)
-    c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
-    #c6 = Dropout(0.2) (c6)
-    c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
+    x = BatchNormalization()(added_1)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=n, kernel_size=(3, 3), padding="same")(x)
 
-    u7 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same') (c6)
-    u7 = concatenate([u7, c3])
-    c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u7)
-    #c7 = Dropout(0.2) (c7)
-    c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
-    #c7 = Dropout(0.2) (c7)
-    c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=n, kernel_size=(3, 3), padding="same")(x)
 
-    u8 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same') (c7)
-    u8 = concatenate([u8, c2])
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u8)
-    #c8 = Dropout(0.2) (c8)
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c8)
-    #c8 = Dropout(0.2) (c8)
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c8)
+    added_2 = _shortcut(added_1, x)
 
-    u9 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same') (c8)
-    u9 = concatenate([u9, c1], axis=3)
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u9)
-    #c9 = Dropout(0.2) (c9)
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c9)
-    #c9 = Dropout(0.2) (c9)
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c9)
+    return added_2
 
-    outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
+def decoder_block(input_tensor, m, n):
+    x = BatchNormalization()(input_tensor)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=int(m/4), kernel_size=(1, 1))(x)
 
-    model = Model(inputs=[inputs], outputs=[outputs])
+    x = UpSampling2D((2, 2))(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=int(m/4), kernel_size=(3, 3), padding='same')(x)
+
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=n, kernel_size=(1, 1))(x)
+
+    return x
+
+def LinkNet(input_shape=(256, 256, 3), classes=1):
+    inputs = Input(shape=input_shape)
+
+    x = BatchNormalization()(inputs)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=64, kernel_size=(7, 7), strides=(2, 2))(x)
+
+    x = MaxPooling2D((3, 3), strides=(2, 2), padding="same")(x)
+
+    encoder_1 = encoder_block(input_tensor=x, m=128, n=128)
+
+    encoder_2 = encoder_block(input_tensor=encoder_1, m=128, n=256)
+
+    encoder_3 = encoder_block(input_tensor=encoder_2, m=256, n=512)
+
+    encoder_4 = encoder_block(input_tensor=encoder_3, m=512, n=1024)
+
+    decoder_4 = decoder_block(input_tensor=encoder_4, m=1024, n=512)
+
+    decoder_3_in = add([decoder_4, encoder_3])
+    decoder_3_in = Activation('relu')(decoder_3_in)
+
+    decoder_3 = decoder_block(input_tensor=decoder_3_in, m=512, n=256)
+
+    decoder_2_in = add([decoder_3, encoder_2])
+    decoder_2_in = Activation('relu')(decoder_2_in)
+
+    decoder_2 = decoder_block(input_tensor=decoder_2_in, m=256, n=128)
+
+    decoder_1_in = add([decoder_2, encoder_1])
+    decoder_1_in = Activation('relu')(decoder_1_in)
+
+    decoder_1 = decoder_block(input_tensor=decoder_1_in, m=128, n=128)
+
+    x = UpSampling2D((2, 2))(decoder_1)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=64, kernel_size=(3, 3), padding="same")(x)
+
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters=64, kernel_size=(3, 3), padding="same")(x)
+
+    x = UpSampling2D((2, 2))(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = Conv2D(filters=classes, kernel_size=(2, 2), padding="same")(x)
+
+    model = Model(inputs=inputs, outputs=x)
 
     return model
+
 
 def generator(xtr, xval, ytr, yval, batch_size):
     data_gen_args = dict(horizontal_flip=True,
@@ -197,23 +242,26 @@ def prob_to_rles(x, cutoff=0.5):
         yield rle_encoding(lab_img == i)
 
 
+
+
+
 if __name__ == "__main__":
 
     img_size = 256
-    batch_size_n = 6
-    epoch_n = 30
+    batch_size_n = 32
+    epoch_n = 200
     val_hold_out = 0.1 #with larger set might as well keep more samples....?
-    learning_rate =0.0001
+    learning_rate = 1e-4
     decay_ = learning_rate /epoch_n
     momentum = .8
 
     #TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
-    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train4/'
+    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train/'
     TEST_PATH = 'E:/2018_dsb/input/stage1_test/'
 
 
-    model_names = 'generator_unet_1070_4_unet.h5'
-    save_names = 'generator_unet_1070_4_unet.csv'
+    model_names = 'LinkNet_1070_4_unet.h5'
+    save_names = 'LinkNet_unet_1070_4_unet.csv'
 
     sub_name ='E:/2018_dsb/submission_files/best_sub-'+save_names
     final_sub_name ='E:/2018_dsb/submission_files/final_sub-'+save_names
@@ -228,16 +276,18 @@ if __name__ == "__main__":
     
     print('putting the model together')
 
-    model = Unet(img_size)
-    opt = Adam(lr=learning_rate)
+    model = LinkNet(input_shape=(256, 256, 3), classes=1)
+
+    #opt = Adam(lr=learning_rate)
+    opt = RMSprop(lr=learning_rate)
     #model = load_model('E:/2018_dsb/models/model-1_24_dsbowl2018-11_512_unet.h5',custom_objects={'mean_iou': mean_iou})
-    model = load_model(save_name_file,custom_objects={'mean_iou': mean_iou})
+    model = load_model(save_name_file,custom_objects={'bce_dice_loss': bce_dice_loss})
 
     #opt = SGD(lr=learning_rate,momentum =momentum,decay=decay_)
 
     #load old models if restarting runs
-    #model.compile(optimizer=adam, loss=bce_dice_loss, metrics=[mean_iou])
-    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
+    model.compile(optimizer=opt, loss=bce_dice_loss, metrics=['binary_crossentropy'])
+    #model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
 
     checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
     every_epoch = ModelCheckpoint(final_model)

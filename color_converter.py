@@ -5,7 +5,7 @@ import cv2
 from skimage.io import imread
 
 grid_size = 8
-aug_path = 'E:/2018_dsb/input/stage1_aug_train3/'
+aug_path = 'E:/2018_dsb/input/2k_aug/'
 
 # Get train and test IDs
 aug_ids = next(os.walk(aug_path))[1]
