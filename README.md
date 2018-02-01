@@ -21,7 +21,14 @@ Run log 11: deeper UNET performing well with heavy dropout added as well as some
 
 There are oddly shaped files in the test set? so although training has been done on the 256x256 set we may need to evaluate images of any set of dimensions? (odd as in 151x500)
 
+1/25: Running generator unet on normalized data, also added functionality to save after every run. Need to test how runs with high mean IOU scores perform.
+
+1/29: training models using normalized data per the competition kernal i cited earlier. One simpler unet closer to the paper publication and one deeper one.
+  I will also start experimenting with Mask R-CNNs (regional CNNs) since they have proven effective when used by other individuals in this competition. for now I am testing the implementation found here (https://github.com/karolmajek/Mask_RCNN) while also cheacking the official keras one. 
+  
+  
 ## Further Testing/TODO List
+- Test code for LinkNet (https://github.com/nickhitsai/LinkNet-Keras/blob/master/linknet.py)
 
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
@@ -35,6 +42,7 @@ There are oddly shaped files in the test set? so although training has been done
 -add images to readme
 
 ## Done List
+- Since fully convolutional layers have fewer nodes than dense layers, dropout isnt the MOST helpful, will try run with L2 regularization across all layers and see how performance goes. (looks to be effective)
 
 -Deploy deeper Unet I think I can get at least up to 512 conv layers using my 1080X Nvidia card (DONE)
   1080 is able to handle deeper Unet, but it requires that we use single image batches. Was able to build the Unet down to 1024 level.
