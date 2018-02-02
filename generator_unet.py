@@ -57,72 +57,62 @@ def Unet(img_size):
     inputs = Input((img_size, img_size, 3))
     s = Lambda(lambda x: x / 255) (inputs)
 
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (inputs)
-    #c1 = Dropout(0.2) (c1)
+    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (s)
+    c1 = Dropout(0.5) (c1)
     c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c1)
-    #c1 = Dropout(0.2) (c1)
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c1)
-
     p1 = MaxPooling2D((2, 2)) (c1)
 
     c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p1)
-    #c2 = Dropout(0.2) (c2)
+    c2 = Dropout(0.5) (c2)
     c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c2)
-    #c2 = Dropout(0.2) (c2)
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c2)
- 
     p2 = MaxPooling2D((2, 2)) (c2)
 
     c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p2)
-    #c3 = Dropout(0.2) (c3)
+    c3 = Dropout(0.5) (c3)
     c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
-    #c3 = Dropout(0.2) (c3)
+    c3 = Dropout(0.5) (c3)
     c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c3)
     p3 = MaxPooling2D((2, 2)) (c3)
 
     c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p3)
-    #c4 = Dropout(0.2) (c4)
+    c4 = Dropout(0.5) (c4)
     c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
-    #c4 = Dropout(0.2) (c4)
+    c4 = Dropout(0.5) (c4)
     c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c4)
     p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
 
     c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (p4)
-    #c5 = Dropout(0.3) (c5)
+    c5 = Dropout(0.5) (c5)
     c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
-    #c5 = Dropout(0.2) (c5)
+    c5 = Dropout(0.5) (c5)
     c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c5)
 
     u6 = Conv2DTranspose(512, (2, 2), strides=(2, 2), padding='same') (c5)
     u6 = concatenate([u6, c4])
     c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u6)
-    #c6 = Dropout(0.2) (c6)
+    c6 = Dropout(0.5) (c6)
     c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
-    #c6 = Dropout(0.2) (c6)
+    c6 = Dropout(0.5) (c6)
     c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c6)
 
     u7 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same') (c6)
     u7 = concatenate([u7, c3])
     c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u7)
-    #c7 = Dropout(0.2) (c7)
+    c7 = Dropout(0.5) (c7)
     c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
-    #c7 = Dropout(0.2) (c7)
+    c7 = Dropout(0.5) (c7)
     c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c7)
 
     u8 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same') (c7)
     u8 = concatenate([u8, c2])
     c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u8)
-    #c8 = Dropout(0.2) (c8)
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c8)
-    #c8 = Dropout(0.2) (c8)
+    c8 = Dropout(0.5) (c8)
     c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c8)
 
     u9 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same') (c8)
     u9 = concatenate([u9, c1], axis=3)
     c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (u9)
-    #c9 = Dropout(0.2) (c9)
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c9)
-    #c9 = Dropout(0.2) (c9)
+    c9 = Dropout(0.5) (c9)
     c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='glorot_uniform', padding='same') (c9)
 
     outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
@@ -135,10 +125,10 @@ def generator(xtr, xval, ytr, yval, batch_size):
     data_gen_args = dict(horizontal_flip=True,
                          vertical_flip=True,
                          rotation_range=90.,
-                         width_shift_range=0.1,
-                         height_shift_range=0.1,
-                         shear_range = 0.1,
-                         zoom_range=0.1)
+                         width_shift_range=0.3,
+                         height_shift_range=0.3,
+                         shear_range = 0.3,
+                         zoom_range=0.3)
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
     image_datagen.fit(xtr, seed=7)
@@ -200,20 +190,18 @@ def prob_to_rles(x, cutoff=0.5):
 if __name__ == "__main__":
 
     img_size = 256
-    batch_size_n = 6
-    epoch_n = 30
-    val_hold_out = 0.1 #with larger set might as well keep more samples....?
+    batch_size_n = 8
+    epoch_n = 150
+    val_hold_out = 0.05 #with larger set might as well keep more samples....?
     learning_rate =0.0001
-    decay_ = learning_rate /epoch_n
-    momentum = .8
-
+    decay_ = 3e-6
+    momentum = .9
     #TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
-    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train4/'
+    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train3/'
     TEST_PATH = 'E:/2018_dsb/input/stage1_test/'
 
-
-    model_names = 'generator_unet_1070_4_unet.h5'
-    save_names = 'generator_unet_1070_4_unet.csv'
+    model_names = 'generator_unet_1070_1_1_unet.h5'
+    save_names = 'generator_unet_1070_1_unet.csv'
 
     sub_name ='E:/2018_dsb/submission_files/best_sub-'+save_names
     final_sub_name ='E:/2018_dsb/submission_files/final_sub-'+save_names
@@ -229,13 +217,12 @@ if __name__ == "__main__":
     print('putting the model together')
 
     model = Unet(img_size)
-    opt = Adam(lr=learning_rate)
-    #model = load_model('E:/2018_dsb/models/model-1_24_dsbowl2018-11_512_unet.h5',custom_objects={'mean_iou': mean_iou})
-    model = load_model(save_name_file,custom_objects={'mean_iou': mean_iou})
+    opt = Adam(lr=learning_rate, decay=decay_)
 
     #opt = SGD(lr=learning_rate,momentum =momentum,decay=decay_)
 
     #load old models if restarting runs
+    model = load_model('E:/2018_dsb/models/best_model-generator_unet_1070_1_1_unet.h5',custom_objects={'mean_iou': mean_iou})
     #model.compile(optimizer=adam, loss=bce_dice_loss, metrics=[mean_iou])
     model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
 
