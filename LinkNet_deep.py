@@ -1,5 +1,3 @@
-#standard Linknet built ona resnet18 architecture
-
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -16,7 +14,7 @@ from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
 from keras.optimizers import Adam, SGD, RMSprop
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
 from keras.regularizers import l2
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
@@ -125,7 +123,6 @@ def decoder_block(input_tensor, m, n):
     return x
 
 def LinkNet(input_shape=(256, 256, 3), classes=1):
-
     inputs = Input(shape=input_shape)
 
     x = BatchNormalization()(inputs)
@@ -134,39 +131,39 @@ def LinkNet(input_shape=(256, 256, 3), classes=1):
 
     x = MaxPooling2D((3, 3), strides=(2, 2), padding="same")(x)
 
-    encoder_1 = encoder_block(input_tensor=x, m=64, n=64)
+    encoder_1 = encoder_block(input_tensor=x, m=128, n=128)
 
-    encoder_2 = encoder_block(input_tensor=encoder_1, m=64, n=128)
+    encoder_2 = encoder_block(input_tensor=encoder_1, m=128, n=256)
 
-    encoder_3 = encoder_block(input_tensor=encoder_2, m=128, n=256)
+    encoder_3 = encoder_block(input_tensor=encoder_2, m=256, n=512)
 
-    encoder_4 = encoder_block(input_tensor=encoder_3, m=256, n=512)
+    encoder_4 = encoder_block(input_tensor=encoder_3, m=512, n=1024)
 
-    decoder_4 = decoder_block(input_tensor=encoder_4, m=512, n=256)
+    decoder_4 = decoder_block(input_tensor=encoder_4, m=1024, n=512)
 
     decoder_3_in = add([decoder_4, encoder_3])
     decoder_3_in = Activation('relu')(decoder_3_in)
 
-    decoder_3 = decoder_block(input_tensor=decoder_3_in, m=256, n=128)
+    decoder_3 = decoder_block(input_tensor=decoder_3_in, m=512, n=256)
 
     decoder_2_in = add([decoder_3, encoder_2])
     decoder_2_in = Activation('relu')(decoder_2_in)
 
-    decoder_2 = decoder_block(input_tensor=decoder_2_in, m=128, n=64)
+    decoder_2 = decoder_block(input_tensor=decoder_2_in, m=256, n=128)
 
     decoder_1_in = add([decoder_2, encoder_1])
     decoder_1_in = Activation('relu')(decoder_1_in)
 
-    decoder_1 = decoder_block(input_tensor=decoder_1_in, m=64, n=64)
+    decoder_1 = decoder_block(input_tensor=decoder_1_in, m=128, n=128)
 
     x = UpSampling2D((2, 2))(decoder_1)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Conv2D(filters=32, kernel_size=(3, 3), padding="same")(x)
+    x = Conv2D(filters=64, kernel_size=(3, 3), padding="same")(x)
 
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Conv2D(filters=32, kernel_size=(3, 3), padding="same")(x)
+    x = Conv2D(filters=64, kernel_size=(3, 3), padding="same")(x)
 
     x = UpSampling2D((2, 2))(x)
     x = BatchNormalization()(x)
@@ -236,6 +233,8 @@ def bce_dice_loss(y_true, y_pred):
     loss = binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
     return loss
     
+
+
 def rle_encoding(x):
     dots = np.where(x.T.flatten() == 1)[0]
     run_lengths = []
@@ -258,10 +257,10 @@ def prob_to_rles(x, cutoff=0.5):
 if __name__ == "__main__":
 
     img_size = 256
-    batch_size_n = 20
+    batch_size_n = 16
     epoch_n = 200
     val_hold_out = 0.05 #with larger set might as well keep more samples....?
-    learning_rate = 1e-5
+    learning_rate = 1e-4
     decay_ = learning_rate /epoch_n
     momentum = .8
 
@@ -290,20 +289,36 @@ if __name__ == "__main__":
     #opt = Adam(lr=learning_rate)
     opt = RMSprop(lr=learning_rate)
     #model = load_model('E:/2018_dsb/models/model-1_24_dsbowl2018-11_512_unet.h5',custom_objects={'mean_iou': mean_iou})
-    model = load_model(save_name_file,custom_objects={'bce_dice_loss': bce_dice_loss})
+    #model = load_model(final_model,custom_objects={'bce_dice_loss': bce_dice_loss})
 
     #opt = SGD(lr=learning_rate,momentum =momentum,decay=decay_)
 
     #load old models if restarting runs
-    #model.compile(optimizer=opt, loss=bce_dice_loss, metrics=['binary_crossentropy'])
+    model.compile(optimizer=opt, loss=bce_dice_loss, metrics=['binary_crossentropy'])
     #model.compile(optimizer=opt, loss='binary_crossentropy', metrics=[mean_iou]) 
 
-    checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
-    every_epoch = ModelCheckpoint(final_model)
+    callbacks = [EarlyStopping(monitor='val_loss',
+                           patience=15,
+                           verbose=1,
+                           min_delta=1e-5),
+             ReduceLROnPlateau(monitor='val_loss',
+                               factor=0.1,
+                               patience=4,
+                               verbose=1,
+                               epsilon=1e-5),
+             ModelCheckpoint(monitor='val_loss',
+                             filepath=save_name_file,
+                             save_best_only=True,verbose=1),
+             ModelCheckpoint(final_model),
+             TensorBoard(log_dir='logs')]
+
+
+    #checkpointer = ModelCheckpoint(save_name_file, verbose=1, save_best_only=True)
+    #every_epoch = ModelCheckpoint(final_model)
     print("show me what you're made of")
 
     model.fit_generator(train_generator, steps_per_epoch=len(xtr)/batch_size_n, epochs=epoch_n,
-                        validation_data=val_generator, validation_steps=len(xval)/batch_size_n,callbacks=[checkpointer,every_epoch])
+                        validation_data=val_generator, validation_steps=len(xval)/batch_size_n,callbacks=callbacks)
 
 
     #################################### Evaluation section ####################################
