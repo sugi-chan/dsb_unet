@@ -24,6 +24,7 @@ There are oddly shaped files in the test set? so although training has been done
 11/25: Running generator unet on normalized data, also added functionality to save after every run. Need to test how runs with high mean IOU scores perform.
 
 ## Further Testing/TODO List
+-build method to ensemble predictions... can probably try something like this https://stackoverflow.com/questions/17291455/how-to-get-an-average-picture-from-100-pictures-using-pil which averages across multiple images. For us each pixel is a 1 or 0 and we can just average across them? probably adjust so that it rounds to 0 or 255 
 
 -Test code to use generators for data augmentation (built, need to debug)
   Can go ahead and test on single images. Or another thing to do is apply noise ahead of time
