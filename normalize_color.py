@@ -17,7 +17,7 @@ from matplotlib.image import imsave
 
 grid_size = 8
 
-save_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train_normalized/'
+save_path = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train-normalized/'
 
 TRAIN_PATH = 'E:/2018_dsb/input/2k_aug/'
 TEST_PATH = 'E:/2018_dsb/input/stage1_test_normalized/'

@@ -5,12 +5,11 @@ import cv2
 from skimage.io import imread
 
 grid_size = 8
-aug_path = 'E:/2018_dsb/input/stage1_aug_train3/'
-
+aug_path = 'C:/Users/micha/Desktop/2018_dsb/input/sub'
 # Get train and test IDs
-aug_ids = next(os.walk(aug_path))[1]
+aug_ids = next(os.walk(aug_path))[2]
 
-
+#print(aug_ids)
 def rgb_clahe_justl(in_rgb_img): 
     bgr = in_rgb_img[:,:,[2,1,0]] # flip r and b
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
@@ -20,7 +19,7 @@ def rgb_clahe_justl(in_rgb_img):
 for ax_index, image_id in enumerate(aug_ids,1):
 	if ax_index % 500 == 0:
 		print(ax_index)
-	mask_file = aug_path+"{}/masks/{}.png".format(image_id,image_id)
+	mask_file = aug_path+"/{}".format(image_id,image_id)
 	col = Image.open(mask_file)
 	grey = col.convert('L')
 	bw = grey.point(lambda x: 0 if x<128 else 255,'1')

@@ -79,7 +79,7 @@ def _shortcut(input, residual):
                           strides=(stride_width, stride_height),
                           padding="valid",
                           kernel_initializer="he_normal",
-                          kernel_regularizer=l2(0.00001))(input)
+                          kernel_regularizer=l2(0.0001))(input)
 
     return add([shortcut, residual])
 
@@ -180,10 +180,10 @@ def generator(xtr, xval, ytr, yval, batch_size):
     data_gen_args = dict(horizontal_flip=True,
                          vertical_flip=True,
                          rotation_range=90.,
-                         width_shift_range=0.1,
-                         height_shift_range=0.1,
-                         shear_range = 0.1,
-                         zoom_range=0.1)
+                         width_shift_range=0.3,
+                         height_shift_range=0.3,
+                         shear_range = 0.3,
+                         zoom_range=0.3)
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
     image_datagen.fit(xtr, seed=7)
@@ -265,17 +265,18 @@ if __name__ == "__main__":
     momentum = .8
 
     #TRAIN_PATH = 'E:/2018_dsb/input/stage1_train/'
-    TRAIN_PATH = 'E:/2018_dsb/input/stage1_aug_train/'
-    TEST_PATH = 'E:/2018_dsb/input/stage1_test/'
+    TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
+    TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-    model_names = 'normalized_LinkNet_1070_5_unet.h5'
-    save_names = 'normalized_LinkNet_1070_5_unet.csv'
 
-    sub_name ='E:/2018_dsb/submission_files/best_sub-'+save_names
-    final_sub_name ='E:/2018_dsb/submission_files/final_sub-'+save_names
+    model_names = 'normalized_LinkNet_1080_5_unet.h5'
+    save_names = 'normalized_LinkNet_1080_5_unet.csv'
 
-    save_name_file = 'E:/2018_dsb/models/best_model-'+model_names
-    final_model = 'E:/2018_dsb/models/final_model-'+model_names
+    sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-'+save_names
+    final_sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/final_sub-'+save_names
+
+    save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-'+model_names
+    final_model = 'C:/Users/micha/Desktop/2018_dsb/models/final_model-'+model_names
 
     print('building train and val sets')
     X_train, Y_train, X_test, sizes_test = make_df(TRAIN_PATH, TEST_PATH, img_size)

@@ -33,12 +33,11 @@ IMG_CHANNELS = 3
 
 #TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_train/'
 TEST_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_test/'
-TRAIN_PATH = 'C:/Users/micha/Desktop/2018_dsb/input/stage1_aug_train/'
 
-sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/sub-dsbowl2018-15_512_unet.csv'
-save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/model-1_24_dsbowl2018-11_512_unet.h5'
+sub_name ='C:/Users/micha/Desktop/2018_dsb/submission_files/final_model-deeper_unet_2_7.csv'
+save_name_file = 'C:/Users/micha/Desktop/2018_dsb/models/final_model-deeper_unet_2_3.h5'
 patience = 3
-batch_size_n = 2
+batch_size_n = 1
 epoch_n = 100
 val_hold_out = 0.03 #with larger set might as well keep more samples....?
 learning_rate =0.0001
@@ -68,6 +67,26 @@ for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
     X_test[n] = img
 
 print('Done!')
+from keras.losses import binary_crossentropy
+
+
+def dice_coeff(y_true, y_pred):
+    smooth = 1.
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    score = (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return score
+
+
+def dice_loss(y_true, y_pred):
+    loss = 1 - dice_coeff(y_true, y_pred)
+    return loss
+
+
+def bce_dice_loss(y_true, y_pred):
+    loss = binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
+    return loss
 
 def dice_coef(y_true, y_pred):
     smooth = 1.
@@ -92,14 +111,14 @@ def mean_iou(y_true, y_pred):
         prec.append(score)
     return K.mean(K.stack(prec), axis=0)
 
+model = load_model(save_name_file, custom_objects={'bce_dice_loss': bce_dice_loss})
 
 #make predictions
 # Predict on train, val and test
 
-model = load_model(save_name_file, custom_objects={'mean_iou': mean_iou})
 #preds_train = model.predict(X_train[:int(X_train.shape[0]*0.90)], verbose=1)
 #preds_val = model.predict(X_train[int(X_train.shape[0]*0.90):], verbose=1)
-preds_test = model.predict(X_test, verbose=1)
+preds_test = model.predict(X_test, verbose=1,batch_size=1)
 
 # Threshold predictions
 #preds_train_t = (preds_train > 0.5).astype(np.uint8)

@@ -26,7 +26,7 @@ from keras.layers.core import Dropout, Lambda
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D
 from keras.layers.merge import concatenate
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
 from keras import backend as K
 from keras import regularizers
 import tensorflow as tf
@@ -214,7 +214,7 @@ model.save(final_model)
 model = load_model(save_name_file, custom_objects={'mean_iou': mean_iou})
 #preds_train = model.predict(X_train[:int(X_train.shape[0]*0.90)], verbose=1)
 #preds_val = model.predict(X_train[int(X_train.shape[0]*0.90):], verbose=1)
-preds_test = model.predict(X_test, verbose=1)
+preds_test = model.predict(X_test, verbose=1)                                               
 
 # Threshold predictions
 #preds_train_t = (preds_train > 0.5).astype(np.uint8)
